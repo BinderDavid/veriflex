@@ -1,0 +1,9 @@
+name = "veriflex"
+version = "0.1.0"
+description = "Veriflex is a verified lexer for Lean 4 based on Brzozowski derivatives of regular expressions."
+keywords = ["lexer", "software-verification"]
+license = "MIT"
+defaultTargets = ["Veriflex"]
+
+[[lean_lib]]
+name = "Veriflex"
