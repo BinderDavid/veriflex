@@ -1,6 +1,10 @@
-/-
-Regular Expressions and Matching
+/-!
+# Regular Expressions and Matching
+
+This file defines regular expressions and the inductive matching relation which characterizes when a string matches against a regular expression.
 -/
+
+namespace Veriflex
 
 /-- Regular Expressions -/
 inductive RE : Type where
@@ -39,16 +43,25 @@ inductive RE : Type where
     -/
   | Symbol : Char → RE
 
+/--
+A helper function which computes the union of a list of regular expressions.
+-/
 def unions (res: List RE) : RE :=
   match res with
    | [] => RE.Empty
    | (re :: res) => RE.Union re (unions res)
 
+/--
+A helper function which computes the regular expression which appends all elements of a list of regular expressions.
+-/
 def apps (res : List RE) : RE :=
   match res with
    | [] => RE.Epsilon
    | (re :: res) => RE.App re (apps res)
 
+/--
+A helper function which computes the regular expression which matches exactly the given string.
+-/
 def from_string (l : List Char) : RE :=
   apps (List.map (λ c => RE.Symbol c) l)
 
@@ -88,3 +101,5 @@ inductive Matching : RE → List Char → Prop where
     /-- `Symbol` matches the specified symbol. -/
   | SYMBOL :
     Matching (RE.Symbol c) [c]
+
+end Veriflex

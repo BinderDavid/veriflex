@@ -1,8 +1,13 @@
 import Veriflex.RegExp
+/-!
+# Rules and Grammar
 
-/-
-Rules
+This file describes the rules which make up the grammar of the lexer.
+Each rule consists of a regular expression and a semantic action, i.e.
+a function which takes the lexed string and transforms it into a token.
 -/
+
+namespace Veriflex
 
 structure Rule (tok : Type ): Type where
   re : RE
@@ -50,3 +55,5 @@ inductive Tokens {tok : Type} : List (Rule tok) → List Token →  List Char �
     FirstToken R t pre z →
     Tokens R  toks u s →
     Tokens R (tok :: toks) u (z ++ ps)
+
+end Veriflex
