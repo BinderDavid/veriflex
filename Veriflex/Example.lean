@@ -16,6 +16,7 @@ inductive Token where
   | Identifier : String → Token
   | KeywordData : Token
   | IntLiteral : Nat → Token
+  | Whitespace : Token
   deriving BEq, Repr
 
 /--
@@ -114,6 +115,12 @@ def IntLiteral : Rule Token :=
     action := λ s => Token.IntLiteral (parse_decimal s.toList)
   }
 
+
+def Whitespace : Rule Token :=
+  { re := RE.Plus (RE.Property (λ c => c.isWhitespace))
+    action := λ _ => Token.Whitespace
+  }
+
 /--
 Combined grammar.
 Note that the order of the rules is important:
@@ -122,7 +129,7 @@ expressions match the string "data", but this string should be lexed as
 a keyword, not an identifier.
 -/
 def grammar : List (Rule Token) :=
-  [KeywordData, Identifier, IntLiteral]
+  [KeywordData, Identifier, IntLiteral, Whitespace]
 
 def lexer (s : String) : List Token :=
   (lex s.toList grammar).fst
@@ -130,5 +137,6 @@ def lexer (s : String) : List Token :=
 #guard lexer "data" == [Token.KeywordData]
 #guard lexer "foo" == [Token.Identifier "foo"]
 #guard lexer "123" == [Token.IntLiteral 123]
+#guard lexer "  " == [Token.Whitespace]
 
 end Veriflex
