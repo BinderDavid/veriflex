@@ -6,6 +6,9 @@ This file defines regular expressions and the inductive matching relation which 
 
 namespace Veriflex
 
+inductive NotNullable : (Char → Bool) → Prop where
+  | Ex : (f : Char → Bool) (c : Char) → (f c = true) → NotNullable f
+
 /-- Regular Expressions -/
 inductive RE : Type where
     /--
@@ -42,6 +45,14 @@ inductive RE : Type where
     `L(Symbol('a')) = { "a" }`
     -/
   | Symbol : Char → RE
+    /--
+    The regular expression matching every character for which
+    the given property holds. We enforce that the property cannot
+    be false for every argument, so `L(Property(P)) ≠ ∅`.
+
+    `L(Property(P)) = { a | a ∈ Σ ∧ P(a) = true }`
+    -/
+  | Property : (f : Char → Bool) → NotNullable f →  RE
 
 /--
 A helper function which computes the union of a list of regular expressions.
@@ -101,5 +112,8 @@ inductive Matching : RE → List Char → Prop where
     /-- `Symbol` matches the specified symbol. -/
   | SYMBOL :
     Matching (RE.Symbol c) [c]
+  | PROPERTY : ∀ c P H,
+    P c = true →
+    Matching (RE.Property P H) [c]
 
 end Veriflex
