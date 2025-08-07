@@ -14,7 +14,7 @@ namespace Veriflex
 def nullable (re : RE) : Bool :=
   match re with
   | RE.Symbol _ => false
-  | RE.Property _ _ => false
+  | RE.Property _ => false
   | RE.Empty => false
   | RE.Epsilon => true
   | RE.Union re₁ re₂ => or (nullable re₁) (nullable re₂)
@@ -27,7 +27,7 @@ theorem nullable_correct_mp (re : RE) :
   intros H
   induction re with
   | Symbol _ => cases H
-  | Property _ _ => cases H
+  | Property _ => cases H
   | Empty => cases H
   | Epsilon => apply Matching.EPSILON
   | Union re₁ re₂ IH₁ IH₂ =>
@@ -65,7 +65,7 @@ theorem nullable_correct_mpr (re : RE) :
   intros H
   induction re with
   | Symbol _ => cases H
-  | Property _ _ => cases H
+  | Property _ => cases H
   | Empty => cases H
   | Epsilon => rfl
   | Union re₁ re₂ IH₁ IH₂ =>
@@ -118,7 +118,7 @@ def derivative (a : Char) (re : RE) : RE :=
   | RE.Empty => RE.Empty
   | RE.Epsilon => RE.Empty
   | RE.Symbol c => if c == a then RE.Epsilon else RE.Empty
-  | RE.Property P _ => if P a == true then RE.Epsilon else RE.Empty
+  | RE.Property P => if P a == true then RE.Epsilon else RE.Empty
   | RE.Union re₁ re₂ => RE.Union (derivative a re₁) (derivative a re₂)
   | RE.Star re => RE.App (derivative a re) (RE.Star re)
   | RE.Plus re => RE.App (derivative a re) (RE.Star re)
@@ -261,7 +261,7 @@ theorem derivative_correct_mp (x : Char) (re : RE) (xs : List Char) :
       cases H with
       | EPSILON => apply Matching.SYMBOL
     . rw [if_neg H_eq] at H ; cases H
-  | Property P _ =>
+  | Property P =>
     simp! at H
     by_cases H_eq : P x = true
     . rw [H_eq] at H
@@ -324,7 +324,7 @@ theorem derivative_correct_mpr (x : Char) (re : RE) (xs : List Char) :
       exact Matching.EPSILON
   | Property P =>
     cases H with
-    | PROPERTY _ _ _ H =>
+    | PROPERTY _ _ H =>
       simp!
       rw [H]
       exact Matching.EPSILON
