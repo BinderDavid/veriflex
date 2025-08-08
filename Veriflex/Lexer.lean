@@ -1,5 +1,6 @@
 import Veriflex.Grammar
 import Veriflex.Brzozowski
+import Veriflex.Utils
 
 /-!
 # Lexer
@@ -28,33 +29,21 @@ Given a string and a rule, compute the longest prefix that matches this rule.
 If the regular expression matches successfully, return the computed token,
 the length of the consumed input, and the remainder of the output.
 -/
-def maxpref_one {tok : Type}(s : List Char) (r : Rule tok) : Option (tok × Int × List Char) :=
+def maxpref_one {tok : Type}(s : List Char) (r : Rule tok) : Option (tok × Nat × List Char) :=
   match maxpref_one_rec none [] s r.re with
   | none => none
   | some (pre, rest) => some (r.action (String.mk pre), pre.length, rest)
 
-def max_pref_rec {tok : Type}
-                 (best : Option (tok × Int × List Char))
-                 (input : List Char)
-                 (rules : List (Rule tok))
-                 : Option (tok × Int × List Char) :=
-    match rules with
-    | [] => best
-    | (r :: rules) =>
-       match maxpref_one input r with
-       | none => max_pref_rec best input rules
-       | some (tok, len, rest) =>
-          match best with
-          | none => max_pref_rec (some (tok, len, rest)) input rules
-          | some best => if len > best.2.1
-                         then max_pref_rec (some (tok, len, rest)) input rules
-                         else max_pref_rec (some best) input rules
 
+theorem max_pref_one_smaller :
+  maxpref_one input rule = some ⟨tok, n, rest⟩ →
+  rest.length < input.length := sorry
 
 def max_pref {tok : Type}(input : List Char) (rules : List (Rule tok)) : Option (tok × List Char) :=
-    match max_pref_rec none input rules with
-    | none => none
-    | some (tok, _, rest) => (tok, rest)
+  let max_prefixes : List (Option (tok × Nat × List Char)) := rules.map (λ rule => maxpref_one input rule)
+  let max_prefixes : List (tok × Nat × List Char) := max_prefixes.filterMap id
+  let result : Option (tok × Nat × List Char):= find_first_max max_prefixes (λ x => x.2.1)
+  result.map (λ x => ⟨x.1, x.2.2 ⟩)
 
 theorem max_pref_smaller :
   max_pref input rules = some ⟨tok, rest ⟩ →
