@@ -22,6 +22,7 @@ def maxpref_one_rec (best : Option (List Char × List Char))
                then maxpref_one_rec (some (left', right')) left' right' re'
                else maxpref_one_rec best left' right' re'
 
+
 /--
 Given a string and a rule, compute the longest prefix that matches this rule.
 If the regular expression matches successfully, return the computed token,
@@ -31,7 +32,6 @@ def maxpref_one {tok : Type}(s : List Char) (r : Rule tok) : Option (tok × Int 
   match maxpref_one_rec none [] s r.re with
   | none => none
   | some (pre, rest) => some (r.action (String.mk pre), pre.length, rest)
-
 
 def max_pref_rec {tok : Type}
                  (best : Option (tok × Int × List Char))
@@ -56,13 +56,40 @@ def max_pref {tok : Type}(input : List Char) (rules : List (Rule tok)) : Option 
     | none => none
     | some (tok, _, rest) => (tok, rest)
 
+theorem max_pref_smaller :
+  max_pref input rules = some ⟨tok, rest ⟩ →
+  rest.length < input.length := by
+  sorry
 
-/- This function is actually total, since `len(rest) < len(input)`! -/
-partial def lex {tok : Type}(input : List Char) (rules : List (Rule tok)) : List tok × List Char :=
-  match max_pref input rules with
+
+def measure (x : Option (tok × List Char)) : Nat :=
+  match x with
+  | none => 0
+  | some ⟨ _, xs ⟩ => xs.length + 1
+
+
+def lex_rec {tok : Type}(input : List Char)(foo: Option (tok × List Char))(rules : List (Rule tok)) : List tok × List Char :=
+  match foo with
   | none => ([], input)
   | some (tok, rest) =>
-    let (toks, rest') := lex rest rules
+    let (toks, rest') :=
+      lex_rec rest (max_pref rest rules) rules
     (tok :: toks, rest')
+termination_by measure foo
+decreasing_by
+  simp!
+  generalize H : max_pref rest rules = x
+  cases x with
+  | none =>
+    simp!
+  | some x =>
+    let ⟨_, x ⟩ := x
+    simp!
+    apply max_pref_smaller
+    exact H
+
+def lex {tok : Type}(input : List Char) (rules : List (Rule tok)) : List tok × List Char :=
+  lex_rec input (max_pref input rules) rules
+
 
 end Veriflex
