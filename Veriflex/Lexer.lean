@@ -17,47 +17,73 @@ def apply_rule  {tok : Type} :
   | none => none
   | some ⟨pre, rest⟩ => some ⟨rule.action (String.mk pre), pre.length, rest⟩
 
-def max_pref {tok : Type}(input : List Char) (rules : List (Rule tok)) : Option (tok × List Char) :=
+def max_pref {tok : Type}(input : List Char) (rules : List (Rule tok)) : Option (tok × Nat × List Char) :=
   let max_prefixes : List (Rule tok × Option (List Char × List Char)) := rules.map (λ rule => ⟨rule, max_pref_one rule.re input⟩)
   let max_prefixes : List (Option (tok × Nat × List Char)) := max_prefixes.map apply_rule
   let max_prefixes : List (tok × Nat × List Char) := max_prefixes.filterMap id
   let result : Option (tok × Nat × List Char):= find_first_max max_prefixes (λ x => x.2.1)
-  result.map (λ x => ⟨x.1, x.2.2 ⟩)
+  result
 
-theorem max_pref_smaller :
-  max_pref input rules = some ⟨tok, rest ⟩ →
-  rest.length < input.length := by
+theorem max_pref_length :
+  max_pref input rules = some ⟨tok,n,rest⟩ →
+  input.length = n + rest.length := by
+  intros H
+  unfold max_pref at H
   sorry
 
+def first_token {tok : Type}(input : List Char) (rules : List (Rule tok)) : Option (tok × List Char) :=
+  match max_pref input rules with
+  | none => none
+  | some ⟨tok,n,rest⟩ => if n > 0
+                         then some ⟨tok, rest⟩
+                         else none
+
+
+
+theorem first_token_smaller :
+  first_token input rules = some ⟨tok, rest⟩ →
+  rest.length < input.length := by
+  unfold first_token
+  generalize H_eq : max_pref input rules = res
+  intros H
+  cases res with
+  | none =>
+    simp! at H
+  | some v =>
+    let ⟨token,n,rest'⟩ := v
+    simp! at H
+    have X : input.length = n + rest'.length := by
+      apply max_pref_length
+      apply H_eq
+    let ⟨H₁,_,H₂⟩ := H
+    rw [X,H₂]
+    omega
 
 def measure (x : Option (tok × List Char)) : Nat :=
   match x with
   | none => 0
   | some ⟨ _, xs ⟩ => xs.length + 1
 
-
 def lex_rec {tok : Type}(input : List Char)(foo: Option (tok × List Char))(rules : List (Rule tok)) : List tok × List Char :=
   match foo with
   | none => ([], input)
   | some (tok, rest) =>
     let (toks, rest') :=
-      lex_rec rest (max_pref rest rules) rules
+      lex_rec rest (first_token rest rules) rules
     (tok :: toks, rest')
 termination_by measure foo
 decreasing_by
   simp!
-  generalize H : max_pref rest rules = x
+  generalize H : first_token rest rules = x
   cases x with
   | none =>
     simp!
   | some x =>
     let ⟨_, x ⟩ := x
     simp!
-    apply max_pref_smaller
-    exact H
+    exact (first_token_smaller H)
 
 def lex {tok : Type}(input : List Char) (rules : List (Rule tok)) : List tok × List Char :=
-  lex_rec input (max_pref input rules) rules
-
+  lex_rec input (first_token input rules) rules
 
 end Veriflex

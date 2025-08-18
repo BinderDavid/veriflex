@@ -23,10 +23,10 @@ def max_pref_one_rec
                else max_pref_one_rec re' best left' right'
 
 
+/-- Lemma for proving `max_pref_one_prefix` -/
 theorem max_pref_one_rec_prefix :
   max_pref_one_rec re best left right = some ⟨pre, rest⟩ →
   best = some ⟨pre, rest⟩ ∨ left ++ right = pre ++ rest := by
-  intros H
   revert re best left pre rest
   induction right with
   | nil =>
