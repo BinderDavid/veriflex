@@ -35,11 +35,6 @@ def max_pref_one {tok : Type}(s : List Char) (r : Rule tok) : Option (tok × Nat
   | some (pre, rest) => some (r.action (String.mk pre), pre.length, rest)
 
 
-theorem max_pref_one_smaller :
-  max_pref_one input rule = some ⟨tok, n, rest⟩ →
-  rest.length < input.length := by
-  sorry
-
 def max_pref {tok : Type}(input : List Char) (rules : List (Rule tok)) : Option (tok × List Char) :=
   let max_prefixes : List (Option (tok × Nat × List Char)) := rules.map (λ rule => max_pref_one input rule)
   let max_prefixes : List (tok × Nat × List Char) := max_prefixes.filterMap id
