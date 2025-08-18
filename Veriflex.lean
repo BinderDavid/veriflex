@@ -3,3 +3,5 @@ import Veriflex.Grammar
 import Veriflex.Brzozowski
 import Veriflex.Lexer
 import Veriflex.Example
+import Veriflex.Utils
+import Veriflex.MaxPrefix

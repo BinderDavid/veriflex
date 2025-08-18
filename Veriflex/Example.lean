@@ -138,5 +138,6 @@ def lexer (s : String) : List Token :=
 #guard lexer "foo" == [Token.Identifier "foo"]
 #guard lexer "123" == [Token.IntLiteral 123]
 #guard lexer "  " == [Token.Whitespace]
+#guard lexer "123 foo" == [Token.IntLiteral 123, Token.Whitespace, Token.Identifier "foo"]
 
 end Veriflex
