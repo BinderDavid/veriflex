@@ -1,6 +1,7 @@
 import Veriflex.Grammar
 import Veriflex.Brzozowski
 import Veriflex.Utils
+import Veriflex.MaxPrefix
 
 /-!
 # Lexer
@@ -9,34 +10,16 @@ This file implements the function `lex` which takes a grammar and lexes a string
 -/
 namespace Veriflex
 
-def max_pref_one_rec (best : Option (List Char × List Char))
-        (left right : List Char)
-        (re : RE)
-        : Option (List Char × List Char) :=
-  match right with
-  | [] => if nullable re
-          then some (left, right)
-          else best
-  | s :: right' => let re' := derivative s re
-               let left' := left ++ [s]
-               if nullable re'
-               then max_pref_one_rec (some (left', right')) left' right' re'
-               else max_pref_one_rec best left' right' re'
-
-
-/--
-Given a string and a rule, compute the longest prefix that matches this rule.
-If the regular expression matches successfully, return the computed token,
-the length of the consumed input, and the remainder of the output.
--/
-def max_pref_one {tok : Type}(s : List Char) (r : Rule tok) : Option (tok × Nat × List Char) :=
-  match max_pref_one_rec none [] s r.re with
+def apply_rule  {tok : Type} :
+  Rule tok × Option (List Char × List Char) →
+  Option (tok × Nat × List Char) := λ ⟨rule,x ⟩ =>
+  match x with
   | none => none
-  | some (pre, rest) => some (r.action (String.mk pre), pre.length, rest)
-
+  | some ⟨pre, rest⟩ => some ⟨rule.action (String.mk pre), pre.length, rest⟩
 
 def max_pref {tok : Type}(input : List Char) (rules : List (Rule tok)) : Option (tok × List Char) :=
-  let max_prefixes : List (Option (tok × Nat × List Char)) := rules.map (λ rule => max_pref_one input rule)
+  let max_prefixes : List (Rule tok × Option (List Char × List Char)) := rules.map (λ rule => ⟨rule, max_pref_one rule.re input⟩)
+  let max_prefixes : List (Option (tok × Nat × List Char)) := max_prefixes.map apply_rule
   let max_prefixes : List (tok × Nat × List Char) := max_prefixes.filterMap id
   let result : Option (tok × Nat × List Char):= find_first_max max_prefixes (λ x => x.2.1)
   result.map (λ x => ⟨x.1, x.2.2 ⟩)
