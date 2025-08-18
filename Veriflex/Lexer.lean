@@ -27,9 +27,32 @@ def max_pref {tok : Type}(input : List Char) (rules : List (Rule tok)) : Option 
 theorem max_pref_length :
   max_pref input rules = some ⟨tok,n,rest⟩ →
   input.length = n + rest.length := by
+  unfold max_pref
+  simp!
+  generalize H_eq : List.filterMap (apply_rule ∘ fun rule => (rule, max_pref_one rule.re input)) rules = xs
+  have H_forall : ∀ x ∈ xs, input.length = x.snd.fst + x.snd.snd.length := by
+    intros x H_in
+    rw [←H_eq] at H_in
+    let ⟨tok,n,rest⟩ := x
+    simp!
+    clear H_eq
+    have X := List.mem_filterMap.mp H_in
+    let ⟨rule,_,X⟩ := X
+    simp! at X
+    generalize H_eq : max_pref_one rule.re input = res at X
+    cases res with
+    | none => simp! at X
+    | some val =>
+      let ⟨pre,rest'⟩ := val
+      simp! at X
+      have Y := max_pref_one_prefix H_eq
+      let ⟨_,X₁,X₂⟩ := X
+      rw [←X₁, ←Y, X₂]
+      rw [List.length_append]
   intros H
-  unfold max_pref at H
-  sorry
+  have H_in := find_first_max_contained H
+  specialize H_forall ⟨ tok,n ,rest⟩ H_in
+  assumption
 
 def first_token {tok : Type}(input : List Char) (rules : List (Rule tok)) : Option (tok × List Char) :=
   match max_pref input rules with
