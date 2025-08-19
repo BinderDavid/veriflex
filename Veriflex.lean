@@ -5,3 +5,4 @@ import Veriflex.Lexer
 import Veriflex.Example
 import Veriflex.Utils
 import Veriflex.MaxPrefix
+import Veriflex.Located

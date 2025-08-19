@@ -1,5 +1,6 @@
 import Veriflex.Grammar
 import Veriflex.Brzozowski
+import Veriflex.Located
 
 /-!
 # MaxPrefix
@@ -9,14 +10,14 @@ namespace Veriflex
 
 def max_pref_one_rec
   (re : RE)
-  (best : Option (List Char × List Char))
-  (left right : List Char)
- : Option (List Char × List Char) :=
+  (best : Option (List LChar × List LChar))
+  (left right : List LChar)
+ : Option (List LChar × List LChar) :=
   match right with
   | [] => if nullable re
           then some (left, right)
           else best
-  | s :: right' => let re' := derivative s re
+  | s :: right' => let re' := derivative s.content re
                let left' := left ++ [s]
                if nullable re'
                then max_pref_one_rec re' (some (left', right')) left' right'
@@ -45,7 +46,7 @@ theorem max_pref_one_rec_prefix :
   | cons hd tl IH =>
     intros re best left pre rest H
     simp! at H
-    by_cases H_nullable : nullable (derivative hd re)
+    by_cases H_nullable : nullable (derivative hd.content re)
     . rw [H_nullable] at H
       simp! at H
       specialize IH H
@@ -67,7 +68,7 @@ Given an input string and a rule, compute the longest prefix of the input that m
 If the regular expression matches successfully, return the computed token,
 the length of the consumed input, and the remainder of the output.
 -/
-def max_pref_one (re : RE)(input : List Char)  : Option (List Char × List Char) :=
+def max_pref_one (re : RE)(input : List LChar)  : Option (List LChar × List LChar) :=
   max_pref_one_rec re none [] input
 
 theorem max_pref_one_prefix :
@@ -82,11 +83,11 @@ theorem max_pref_one_prefix :
 
 theorem max_pref_one_matches :
   max_pref_one rule input = some ⟨pre, rest⟩ →
-  Matching re pre := sorry
+  Matching re (contents pre) := sorry
 
 theorem max_pref_one_longest :
   max_pref_one rule input = some ⟨pre, rest⟩ →
   ∀ pre' rest',
     pre' ++ rest' = input →
-    Matching re pre' →
+    Matching re (contents pre') →
     pre'.length <= pre.length := sorry
