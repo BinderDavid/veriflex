@@ -11,6 +11,7 @@ abbrev Location : Type := Nat
 structure Located (a : Type) : Type where
   location : Location
   content : a
+  deriving BEq
 
 abbrev LChar : Type := Located Char
 

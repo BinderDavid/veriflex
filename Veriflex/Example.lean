@@ -134,13 +134,15 @@ def grammar : Grammar Token :=
 def columnize (s : String) : List LChar :=
  s.toList.zipIdx.map (λ ⟨c,l⟩ => Located.mk l c)
 
-def lexer (s : String) : List Token :=
+def lexer (s : String) : List (Located Token) :=
   (lex grammar (columnize s)).fst
 
-#guard lexer "data" == [Token.KeywordData]
-#guard lexer "foo" == [Token.Identifier "foo"]
-#guard lexer "123" == [Token.IntLiteral 123]
-#guard lexer "  " == [Token.Whitespace]
-#guard lexer "123 foo" == [Token.IntLiteral 123, Token.Whitespace, Token.Identifier "foo"]
+#guard lexer "data"    == [ Located.mk 0 Token.KeywordData ]
+#guard lexer "foo"     == [ Located.mk 0 (Token.Identifier "foo") ]
+#guard lexer "123"     == [ Located.mk 0 (Token.IntLiteral 123) ]
+#guard lexer "  "      == [ Located.mk 0 Token.Whitespace ]
+#guard lexer "123 foo" == [ Located.mk 0 (Token.IntLiteral 123)
+                          , Located.mk 3 Token.Whitespace
+                          , Located.mk 4 (Token.Identifier "foo") ]
 
 end Veriflex

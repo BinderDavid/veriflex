@@ -61,12 +61,13 @@ theorem max_pref_length :
 def first_token {tok : Type}
                 (G : Grammar tok)
                 (input : List LChar)
-                : Option (tok × List LChar) :=
+                : Option (Located tok × List LChar) :=
   match max_pref input G with
   | none => none
-  | some ⟨tok,n,rest⟩ => if n.length > 0
-                         then some ⟨tok, rest⟩
-                         else none
+  | some ⟨tok,pre,rest⟩ =>
+    match pre with
+    | List.nil => none
+    | List.cons x _ => some ⟨Located.mk x.location tok, rest⟩
 
 
 
@@ -85,9 +86,15 @@ theorem first_token_smaller :
     have X : input.length = n.length + rest'.length := by
       apply max_pref_length
       apply H_eq
-    let ⟨H₁,_,H₂⟩ := H
-    rw [X,H₂]
-    omega
+    clear H_eq
+    cases n with
+    | nil => simp! at H
+    | cons hd tl =>
+      simp! at H
+      let ⟨H₁,H₂⟩ := H
+      simp! at X
+      rw [H₂] at X
+      omega
 
 def measure {tok a : Type}(x : Option (tok × List a)) : Nat :=
   match x with
@@ -97,8 +104,8 @@ def measure {tok a : Type}(x : Option (tok × List a)) : Nat :=
 def lex_rec {tok : Type}
             (G : Grammar tok)
             (input : List LChar)
-            (next: Option (tok × List LChar))
-            : List tok × List LChar :=
+            (next: Option (Located tok × List LChar))
+            : List (Located tok) × List LChar :=
   match next with
   | none => ([], input)
   | some (tok, rest) =>
@@ -120,7 +127,7 @@ decreasing_by
 def lex {tok : Type}
         (G : Grammar tok)
         (input : List LChar)
-        : List tok × List LChar :=
+        : List (Located tok) × List LChar :=
   lex_rec G input (first_token G input)
 
 end Veriflex
