@@ -13,28 +13,28 @@ namespace Veriflex
 
 def apply_rule  {tok : Type} :
   Rule tok × Option (List LChar × List LChar) →
-  Option (tok × Nat × List LChar) := λ ⟨rule,x ⟩ =>
+  Option (tok × List LChar × List LChar) := λ ⟨rule,x ⟩ =>
   match x with
   | none => none
-  | some ⟨pre, rest⟩ => some ⟨rule.action (String.mk (contents pre)), pre.length, rest⟩
+  | some ⟨pre, rest⟩ => some ⟨rule.action (String.mk (contents pre)), pre, rest⟩
 
 def max_pref {tok : Type}
              (input : List LChar)
              (G : Grammar tok)
-             : Option (tok × Nat × List LChar) :=
+             : Option (tok × List LChar × List LChar) :=
   let max_prefixes : List (Rule tok × Option (List LChar × List LChar)) := G.map (λ rule => ⟨rule, max_pref_one rule.re input⟩)
-  let max_prefixes : List (Option (tok × Nat × List LChar)) := max_prefixes.map apply_rule
-  let max_prefixes : List (tok × Nat × List LChar) := max_prefixes.filterMap id
-  let result : Option (tok × Nat × List LChar):= find_first_max max_prefixes (λ x => x.2.1)
+  let max_prefixes : List (Option (tok × List LChar × List LChar)) := max_prefixes.map apply_rule
+  let max_prefixes : List (tok × List LChar × List LChar) := max_prefixes.filterMap id
+  let result : Option (tok × List LChar × List LChar):= find_first_max max_prefixes (λ x => x.2.1.length)
   result
 
 theorem max_pref_length :
-  max_pref input rules = some ⟨tok,n,rest⟩ →
-  input.length = n + rest.length := by
+  max_pref input rules = some ⟨tok,pre,rest⟩ →
+  input.length = pre.length + rest.length := by
   unfold max_pref
   simp!
   generalize H_eq : List.filterMap (apply_rule ∘ fun rule => (rule, max_pref_one rule.re input)) rules = xs
-  have H_forall : ∀ x ∈ xs, input.length = x.snd.fst + x.snd.snd.length := by
+  have H_forall : ∀ x ∈ xs, input.length = x.snd.fst.length + x.snd.snd.length := by
     intros x H_in
     rw [←H_eq] at H_in
     let ⟨tok,n,rest⟩ := x
@@ -55,7 +55,7 @@ theorem max_pref_length :
       rw [List.length_append]
   intros H
   have H_in := find_first_max_contained H
-  specialize H_forall ⟨ tok,n ,rest⟩ H_in
+  specialize H_forall ⟨ tok,pre ,rest⟩ H_in
   assumption
 
 def first_token {tok : Type}
@@ -64,7 +64,7 @@ def first_token {tok : Type}
                 : Option (tok × List LChar) :=
   match max_pref input G with
   | none => none
-  | some ⟨tok,n,rest⟩ => if n > 0
+  | some ⟨tok,n,rest⟩ => if n.length > 0
                          then some ⟨tok, rest⟩
                          else none
 
@@ -82,7 +82,7 @@ theorem first_token_smaller :
   | some v =>
     let ⟨token,n,rest'⟩ := v
     simp! at H
-    have X : input.length = n + rest'.length := by
+    have X : input.length = n.length + rest'.length := by
       apply max_pref_length
       apply H_eq
     let ⟨H₁,_,H₂⟩ := H
