@@ -2,6 +2,7 @@ import Veriflex.Grammar
 import Veriflex.Brzozowski
 import Veriflex.Utils
 import Veriflex.MaxPrefix
+import Veriflex.Located
 
 /-!
 # Lexer
@@ -11,17 +12,20 @@ This file implements the function `lex` which takes a grammar and lexes a string
 namespace Veriflex
 
 def apply_rule  {tok : Type} :
-  Rule tok × Option (List Char × List Char) →
-  Option (tok × Nat × List Char) := λ ⟨rule,x ⟩ =>
+  Rule tok × Option (List LChar × List LChar) →
+  Option (tok × Nat × List LChar) := λ ⟨rule,x ⟩ =>
   match x with
   | none => none
-  | some ⟨pre, rest⟩ => some ⟨rule.action (String.mk pre), pre.length, rest⟩
+  | some ⟨pre, rest⟩ => some ⟨rule.action (String.mk (contents pre)), pre.length, rest⟩
 
-def max_pref {tok : Type}(input : List Char) (rules : List (Rule tok)) : Option (tok × Nat × List Char) :=
-  let max_prefixes : List (Rule tok × Option (List Char × List Char)) := rules.map (λ rule => ⟨rule, max_pref_one rule.re input⟩)
-  let max_prefixes : List (Option (tok × Nat × List Char)) := max_prefixes.map apply_rule
-  let max_prefixes : List (tok × Nat × List Char) := max_prefixes.filterMap id
-  let result : Option (tok × Nat × List Char):= find_first_max max_prefixes (λ x => x.2.1)
+def max_pref {tok : Type}
+             (input : List LChar)
+             (G : Grammar tok)
+             : Option (tok × Nat × List LChar) :=
+  let max_prefixes : List (Rule tok × Option (List LChar × List LChar)) := G.map (λ rule => ⟨rule, max_pref_one rule.re input⟩)
+  let max_prefixes : List (Option (tok × Nat × List LChar)) := max_prefixes.map apply_rule
+  let max_prefixes : List (tok × Nat × List LChar) := max_prefixes.filterMap id
+  let result : Option (tok × Nat × List LChar):= find_first_max max_prefixes (λ x => x.2.1)
   result
 
 theorem max_pref_length :
@@ -54,8 +58,11 @@ theorem max_pref_length :
   specialize H_forall ⟨ tok,n ,rest⟩ H_in
   assumption
 
-def first_token {tok : Type}(input : List Char) (rules : List (Rule tok)) : Option (tok × List Char) :=
-  match max_pref input rules with
+def first_token {tok : Type}
+                (G : Grammar tok)
+                (input : List LChar)
+                : Option (tok × List LChar) :=
+  match max_pref input G with
   | none => none
   | some ⟨tok,n,rest⟩ => if n > 0
                          then some ⟨tok, rest⟩
@@ -64,7 +71,7 @@ def first_token {tok : Type}(input : List Char) (rules : List (Rule tok)) : Opti
 
 
 theorem first_token_smaller :
-  first_token input rules = some ⟨tok, rest⟩ →
+  first_token rules input = some ⟨tok, rest⟩ →
   rest.length < input.length := by
   unfold first_token
   generalize H_eq : max_pref input rules = res
@@ -82,22 +89,26 @@ theorem first_token_smaller :
     rw [X,H₂]
     omega
 
-def measure (x : Option (tok × List Char)) : Nat :=
+def measure {tok a : Type}(x : Option (tok × List a)) : Nat :=
   match x with
   | none => 0
   | some ⟨ _, xs ⟩ => xs.length + 1
 
-def lex_rec {tok : Type}(input : List Char)(foo: Option (tok × List Char))(rules : List (Rule tok)) : List tok × List Char :=
-  match foo with
+def lex_rec {tok : Type}
+            (G : Grammar tok)
+            (input : List LChar)
+            (next: Option (tok × List LChar))
+            : List tok × List LChar :=
+  match next with
   | none => ([], input)
   | some (tok, rest) =>
     let (toks, rest') :=
-      lex_rec rest (first_token rest rules) rules
+      lex_rec G rest (first_token G rest)
     (tok :: toks, rest')
-termination_by measure foo
+termination_by measure next
 decreasing_by
   simp!
-  generalize H : first_token rest rules = x
+  generalize H : first_token G rest = x
   cases x with
   | none =>
     simp!
@@ -106,7 +117,10 @@ decreasing_by
     simp!
     exact (first_token_smaller H)
 
-def lex {tok : Type}(input : List Char) (rules : List (Rule tok)) : List tok × List Char :=
-  lex_rec input (first_token input rules) rules
+def lex {tok : Type}
+        (G : Grammar tok)
+        (input : List LChar)
+        : List tok × List LChar :=
+  lex_rec G input (first_token G input)
 
 end Veriflex

@@ -128,11 +128,14 @@ Note that the order of the rules is important:
 expressions match the string "data", but this string should be lexed as
 a keyword, not an identifier.
 -/
-def grammar : List (Rule Token) :=
+def grammar : Grammar Token :=
   [KeywordData, Identifier, IntLiteral, Whitespace]
 
+def columnize (s : String) : List LChar :=
+ s.toList.zipIdx.map (λ ⟨c,l⟩ => Located.mk l c)
+
 def lexer (s : String) : List Token :=
-  (lex s.toList grammar).fst
+  (lex grammar (columnize s)).fst
 
 #guard lexer "data" == [Token.KeywordData]
 #guard lexer "foo" == [Token.Identifier "foo"]

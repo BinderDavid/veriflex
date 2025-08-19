@@ -13,47 +13,53 @@ structure Rule (tok : Type ): Type where
   re : RE
   action : String → tok
 
-def MatchingR {tok : Type}(R : Rule tok) (ls : List Char) : Prop :=
-  Matching R.re ls
+abbrev Grammar (tok : Type) : Type := List (Rule tok)
 
 /-- `p` is a prefix of `z` -/
 def Prefix (p z : List Char) : Prop :=
   ∃ s, p ++ s = z
 
-/-- `p` is the longest prefix of `z` matching a rule in the set `R` -/
-def MaxPref {tok : Type}(R : List (Rule tok)) (p z : List Char) : Prop :=
+/-- `p` is the longest prefix of `z` matching a rule in the grammar `G` -/
+def MaxPref {tok : Type}
+            (G : Grammar tok)
+            (p z : List Char)
+            : Prop :=
   /- `p` is a prefix of  `z`-/
   Prefix p z ∧
-  /- `p` matches against a rule in `R`-/
-  (∃ r ∈ R, MatchingR r p) ∧
+  /- `p` matches against a rule in `G`-/
+  (∃ r ∈ G, Matching r.re p) ∧
   /- All longer prefixes don't match -/
   (∀ p', Prefix p' z ∧ p.length < p'.length →
-         ∀ r' ∈ R, ¬ (MatchingR r' p'))
+         ∀ r' ∈ G, ¬ (Matching r'.re p'))
 
 inductive Index {α : Type } : Nat → α → List α → Prop where
   | ZERO : Index Nat.zero x (x :: xs)
   | SUCC : Index n x xs → Index (Nat.succ n) x (y :: xs)
 
-def FirstToken {tok : Type}(R : List (Rule tok)) (t : tok) (pre z : List Char) : Prop :=
+def FirstToken {tok : Type}
+               (G : Grammar tok)
+               (t : tok)
+               (pre z : List Char)
+               : Prop :=
   /- `pre` must not be empty -/
   pre ≠ [] ∧
-  /- `pre` must be a maximal prefix of `z` matching a rule in `R` -/
-  MaxPref R pre z ∧
-  /- There is a rule `r` in `R` which matches `pre` and produces token `tok` -/
-  (∃ n r, Index n r R ∧
-          MatchingR r pre ∧
+  /- `pre` must be a maximal prefix of `z` matching a rule in `G` -/
+  MaxPref G pre z ∧
+  /- There is a rule `r` in `G` which matches `pre` and produces token `tok` -/
+  (∃ n r, Index n r G ∧
+          Matching r.re pre ∧
           r.action pre.toString = t ∧
-          /- All other rules which occur earlier in `R` do not match -/
-          (∀ r' n', n' < n → Index n' r' R → ¬ MatchingR r' pre))
+          /- All other rules which occur earlier in `G` do not match -/
+          (∀ r' n', n' < n → Index n' r' G → ¬ Matching r'.re pre))
 
 
-inductive Tokens {tok : Type} : List (Rule tok) → List Token →  List Char → List Char → Prop where
+inductive Tokens {tok : Type} (G : Grammar tok) : List Token →  List Char → List Char → Prop where
   | NIL :
-    Tokens R [] xs xs
+    Tokens G [] xs xs
   | CONS :
     z = pre ++ s →
-    FirstToken R t pre z →
-    Tokens R  toks u s →
-    Tokens R (tok :: toks) u (z ++ ps)
+    FirstToken G t pre z →
+    Tokens G  toks u s →
+    Tokens G (tok :: toks) u (z ++ ps)
 
 end Veriflex
